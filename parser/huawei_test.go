@@ -2,13 +2,14 @@
  * @Author: easonchiu
  * @Date: 2023-07-03 17:36:20
  * @LastEditors: easonchiu
- * @LastEditTime: 2023-07-03 19:16:21
+ * @LastEditTime: 2023-07-04 11:47:29
  * @Description:
  */
 package parser
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -38,6 +39,24 @@ func TestGetHWAppData(t *testing.T) {
 	}
 }
 
+func TestGetHWPackageID(t *testing.T) {
+	json := getHWAppData(HW_APP_ID)
+	pkg := getHWPackageID(json)
+
+	if pkg == "" {
+		t.Error("package 为空")
+	}
+}
+
+func TestGetHWSupplier(t *testing.T) {
+	json := getHWAppData(HW_APP_ID)
+	supplier := getHWSupplier(json)
+
+	if supplier == "" {
+		t.Error("supplier 为空")
+	}
+}
+
 func TestGetHWRate(t *testing.T) {
 	json := getHWAppData(HW_APP_ID)
 	rate := getHWRate(json)
@@ -48,5 +67,113 @@ func TestGetHWRate(t *testing.T) {
 
 	if !strings.HasSuffix(rate, "分") {
 		t.Error("rate 取错了")
+	}
+}
+
+func TestGetHWRateCount(t *testing.T) {
+	json := getHWAppData(HW_APP_ID)
+	rateCount := getHWRateCount(json)
+
+	if rateCount == "" {
+		t.Error("rateCount 为空")
+	}
+
+	reg := regexp.MustCompile("^[0-9]+$")
+	if !reg.MatchString(rateCount) {
+		t.Error("rateCount 取错了")
+	}
+}
+
+func TestGetHWLastVersion(t *testing.T) {
+	json := getHWAppData(HW_APP_ID)
+	version := getHWLastVersion(json)
+
+	if version == "" {
+		t.Error("version 为空")
+	}
+
+	reg := regexp.MustCompile("^[0-9.]+$")
+	if !reg.MatchString(version) {
+		t.Error("version 取错了")
+	}
+}
+
+func TestGetHWLastUpdate(t *testing.T) {
+	json := getHWAppData(HW_APP_ID)
+	update := getHWLastUpdate(json)
+
+	if update == "" {
+		t.Error("update 为空")
+	}
+
+	reg := regexp.MustCompile("^[0-9/]+$")
+	if !reg.MatchString(update) {
+		t.Error("update 取错了")
+	}
+}
+
+func TestGetHWPackageSize(t *testing.T) {
+	json := getHWAppData(HW_APP_ID)
+	size := getHWPackageSize(json)
+
+	if size == "" {
+		t.Error("size 为空")
+	}
+
+	reg := regexp.MustCompile("^[0-9]+$")
+	if !reg.MatchString(size) {
+		t.Error("size 取错了")
+	}
+}
+
+func TestGetHWTargetSDK(t *testing.T) {
+	json := getHWAppData(HW_APP_ID)
+	sdk := getHWTargetSDK(json)
+
+	if sdk == "" {
+		t.Error("sdk 为空")
+	}
+
+	reg := regexp.MustCompile("^[0-9]+$")
+	if !reg.MatchString(sdk) {
+		t.Error("sdk 取错了")
+	}
+}
+
+func TestGetHWPrivacyPolicyUrl(t *testing.T) {
+	json := getHWAppData(HW_APP_ID)
+	url := getHWPrivacyPolicyUrl(json)
+
+	if url == "" {
+		t.Error("url 为空")
+	}
+
+	reg := regexp.MustCompile("^http")
+	if !reg.MatchString(url) {
+		t.Error("url 取错了")
+	}
+}
+
+func TestGetHWOtherApps(t *testing.T) {
+	json := getHWAppData(HW_APP_ID)
+	apps := getHWOtherApps(json, HW_APP_ID)
+
+	if len(apps) == 0 {
+		t.Error("apps 为空")
+	}
+
+	for _, a := range apps {
+		if a.Name == "" {
+			t.Error("没找到 Name 字段")
+		}
+		if a.Category == "" {
+			t.Error("没找到 Category 字段")
+		}
+		if a.ID == "" {
+			t.Error("没找到 ID 字段")
+		}
+		if a.Icon == "" {
+			t.Error("没找到 Icon 字段")
+		}
 	}
 }
