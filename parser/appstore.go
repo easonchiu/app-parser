@@ -2,18 +2,20 @@
  * @Author: easonchiu
  * @Date: 2023-07-03 14:35:38
  * @LastEditors: easonchiu
- * @LastEditTime: 2023-07-03 17:26:16
+ * @LastEditTime: 2023-07-05 11:58:49
  * @Description:
  */
 package parser
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"regexp"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/tidwall/gjson"
 )
 
 // app store 的 doc 内容
@@ -90,7 +92,82 @@ func getAppStoreSection(doc *goquery.Document, title string) *goquery.Selection 
 func getAppStoreName(doc *goquery.Document) string {
 	content := doc.Find("meta[property='og:title']")
 
-	return strings.TrimSpace(content.AttrOr("content", ""))
+	name := strings.TrimSpace(content.AttrOr("content", ""))
+
+	// 将字符串转换为rune数组
+	srcRunes := []rune(name)
+
+	// 创建一个新的rune数组，用来存放过滤后的数据
+	dstRunes := make([]rune, 0, len(srcRunes))
+
+	// 过滤不可见字符，根据上面的表的0-32和127都是不可见的字符
+	for _, c := range srcRunes {
+		if c >= 0 && c <= 31 {
+			continue
+		}
+		if c == 127 {
+			continue
+		}
+		dstRunes = append(dstRunes, c)
+	}
+
+	return string(dstRunes)
+}
+
+// 获取应用图标
+func getAppStoreIcon(doc *goquery.Document) string {
+	content := doc.Find(".product-hero__media")
+
+	icon := ""
+
+	srcset := content.Find("picture source[type='image/png']").AttrOr("srcset", "")
+	// png 格式找不到的话，找 jpg 格式的
+	if srcset == "" {
+		srcset = content.Find("picture source[type='image/jpeg']").AttrOr("srcset", "")
+	}
+
+	// 找到 460w 尺寸的图留下来
+	if srcset != "" {
+		sp := strings.Split(srcset, ",")
+		for _, v := range sp {
+			vv := strings.TrimSpace(v)
+			if strings.HasSuffix(vv, "460w") {
+				vv = strings.TrimSpace(strings.Replace(vv, "460w", "", 1))
+				icon = vv
+				break
+			}
+		}
+	}
+
+	return strings.TrimSpace(icon)
+}
+
+// 获取bundle id
+func getAppStoreBundleID(appid string) string {
+	u := "https://itunes.apple.com/lookup?id=" + appid
+	client := &http.Client{}
+
+	request, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		return ""
+	}
+
+	resp, err := client.Do(request)
+	if err != nil {
+		return ""
+	}
+
+	defer resp.Body.Close()
+
+	bytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return ""
+	}
+
+	json := gjson.ParseBytes(bytes)
+	id := json.Get("results.0.bundleId")
+
+	return id.String()
 }
 
 // 获取描述文案
@@ -112,16 +189,34 @@ func getAppStoreSupplier(doc *goquery.Document) string {
 func getAppStoreCategory(doc *goquery.Document) string {
 	sel := getAppStoreSection(doc, "信息")
 
+	category := ""
 	items := sel.Find(".information-list .information-list__item")
-	return strings.TrimSpace(items.Eq(2).Find("dd").Text())
+	items.Map(func(i int, s *goquery.Selection) string {
+		text := strings.TrimSpace(s.Text())
+		if strings.HasPrefix(text, "类別") {
+			category = strings.ReplaceAll(text, "类別", "")
+		}
+		return ""
+	})
+
+	return strings.TrimSpace(category)
 }
 
 // 获取语言
 func getAppStoreLanguage(doc *goquery.Document) string {
 	sel := getAppStoreSection(doc, "信息")
 
+	language := ""
 	items := sel.Find(".information-list .information-list__item")
-	return strings.TrimSpace(items.Eq(4).Find("dd").Text())
+	items.Map(func(i int, s *goquery.Selection) string {
+		text := strings.TrimSpace(s.Text())
+		if strings.HasPrefix(text, "语言") {
+			language = strings.ReplaceAll(text, "语言", "")
+		}
+		return ""
+	})
+
+	return strings.TrimSpace(language)
 }
 
 // 获取评分
@@ -149,6 +244,9 @@ func getAppStoreLastUpdate(doc *goquery.Document) (string, string) {
 	version = strings.ReplaceAll(version, "版本", "")
 
 	update := content.Find("time").Text()
+	update = strings.ReplaceAll(update, "年", "-")
+	update = strings.ReplaceAll(update, "月", "-")
+	update = strings.ReplaceAll(update, "日", "")
 
 	return strings.TrimSpace(version), strings.TrimSpace(update)
 }
@@ -164,7 +262,9 @@ func getAppStorePackageSize(doc *goquery.Document) string {
 // 获取隐私政策链接地址
 func getAppStorePrivacyPolicyUrl(doc *goquery.Document) string {
 	sel := getAppStoreSection(doc, "信息")
-	return sel.Find(".inline-list--app-extensions .inline-list__item").Eq(1).Find("a").AttrOr("href", "")
+	items := sel.Find(".inline-list--app-extensions .inline-list__item")
+	len := items.Length()
+	return sel.Find(".inline-list--app-extensions .inline-list__item").Eq(len-1).Find("a").AttrOr("href", "")
 }
 
 // 获取 更多来自此开发人员的 App

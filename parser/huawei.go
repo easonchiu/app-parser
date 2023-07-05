@@ -2,7 +2,7 @@
  * @Author: easonchiu
  * @Date: 2023-07-03 17:09:07
  * @LastEditors: easonchiu
- * @LastEditTime: 2023-07-04 11:27:59
+ * @LastEditTime: 2023-07-05 10:26:47
  * @Description:
  */
 package parser
@@ -80,9 +80,10 @@ func getHWAppId(name string) string {
 
 	json := gjson.ParseBytes(bytes)
 	data := json.Get("layoutData.0.dataList.0")
+	findName := data.Get("name").String()
 
 	// 判断名称是否匹配
-	nameContains := strings.Contains(data.Get("name").String(), name)
+	nameContains := strings.Contains(name, findName)
 	if !nameContains {
 		return ""
 	}
@@ -198,7 +199,9 @@ func getHWLastVersion(json *gjson.Result) string {
 // 获取版本更新时间
 func getHWLastUpdate(json *gjson.Result) string {
 	update := json.Get("layoutData.3.dataList.0.releaseDate")
-	return strings.TrimSpace(update.String())
+	time := strings.TrimSpace(update.String())
+	time = strings.ReplaceAll(time, "/", "-")
+	return time
 }
 
 // 获取包大小
