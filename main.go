@@ -2,18 +2,11 @@
  * @Author: easonchiu
  * @Date: 2023-07-03 10:53:15
  * @LastEditors: easonchiu
- * @LastEditTime: 2023-07-03 19:17:05
+ * @LastEditTime: 2023-07-05 19:17:17
  * @Description:
  */
 package main
 
-import (
-	"fmt"
-
-	"github.com/easonchiu/app-parser/parser"
-)
-
 func main() {
-	data, _ := parser.ParseAPPData("1142110895")
-	fmt.Println(data)
+	// _, _ = parser.ParseAPPData("")
 }
