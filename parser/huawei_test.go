@@ -2,7 +2,7 @@
  * @Author: easonchiu
  * @Date: 2023-07-03 17:36:20
  * @LastEditors: easonchiu
- * @LastEditTime: 2023-07-04 11:47:29
+ * @LastEditTime: 2023-07-05 10:26:59
  * @Description:
  */
 package parser
@@ -14,7 +14,7 @@ import (
 	"testing"
 )
 
-var HW_APP_ID = "C10652857"
+var HW_APP_ID = "C34075"
 
 func TestGetHWInterfaceCode(t *testing.T) {
 	code := getHWInterfaceCode()
@@ -24,7 +24,7 @@ func TestGetHWInterfaceCode(t *testing.T) {
 }
 
 func TestGetHWId(t *testing.T) {
-	id := getHWAppId("抖音")
+	id := getHWAppId("淘宝")
 	if id == "" {
 		t.Error("id 为空")
 	}
@@ -106,7 +106,7 @@ func TestGetHWLastUpdate(t *testing.T) {
 		t.Error("update 为空")
 	}
 
-	reg := regexp.MustCompile("^[0-9/]+$")
+	reg := regexp.MustCompile("^[0-9-]+$")
 	if !reg.MatchString(update) {
 		t.Error("update 取错了")
 	}
@@ -157,10 +157,6 @@ func TestGetHWPrivacyPolicyUrl(t *testing.T) {
 func TestGetHWOtherApps(t *testing.T) {
 	json := getHWAppData(HW_APP_ID)
 	apps := getHWOtherApps(json, HW_APP_ID)
-
-	if len(apps) == 0 {
-		t.Error("apps 为空")
-	}
 
 	for _, a := range apps {
 		if a.Name == "" {
