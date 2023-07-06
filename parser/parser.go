@@ -2,7 +2,7 @@
  * @Author: easonchiu
  * @Date: 2023-07-03 11:07:23
  * @LastEditors: easonchiu
- * @LastEditTime: 2023-07-06 15:23:45
+ * @LastEditTime: 2023-07-06 17:09:14
  * @Description:
  */
 package parser
@@ -179,17 +179,17 @@ func GetHWIdByName(name string) string {
 
 // 获取华为市场数据
 func ParseHWData(hwId string) (*HWData, error) {
+	// 创建 hw data 结构体
+	hwData := new(HWData)
+
 	if strings.TrimSpace(hwId) == "" {
-		return nil, errors.New("hwId 不能为空")
+		return hwData, errors.New("hwId 不能为空")
 	}
 
 	json, err := getHWAppData(hwId)
 	if err != nil {
-		return nil, err
+		return hwData, err
 	}
-
-	// 创建 hw data 结构体
-	hwData := new(HWData)
 
 	hwData.HWID = hwId
 	hwData.HWPackageID = getHWPackageID(json)
@@ -208,17 +208,18 @@ func ParseHWData(hwId string) (*HWData, error) {
 
 // 获取小米市场数据
 func ParseMIData(pkgId string) (*MIData, error) {
+	// 创建 mi data 结构体
+	miData := new(MIData)
+
 	if strings.TrimSpace(pkgId) == "" {
-		return nil, errors.New("pkgId 不能为空")
+		return miData, errors.New("pkgId 不能为空")
 	}
 
 	doc, err := getMIDoc(pkgId)
 	if err != nil {
-		return nil, err
+		return miData, err
 	}
 
-	// 创建 mi data 结构体
-	miData := new(MIData)
 	miData.MIExist = getMIExist(doc)
 	if miData.MIExist {
 		miData.MIPackageID = pkgId
@@ -232,17 +233,18 @@ func ParseMIData(pkgId string) (*MIData, error) {
 
 // 获取应用宝数据
 func ParseQQData(pkgId string) (*QQData, error) {
+	// 创建 qq data 结构体
+	qqData := new(QQData)
+
 	if strings.TrimSpace(pkgId) == "" {
-		return nil, errors.New("pkgId 不能为空")
+		return qqData, errors.New("pkgId 不能为空")
 	}
 
 	doc, err := getQQDoc(pkgId)
 	if err != nil {
-		return nil, err
+		return qqData, err
 	}
 
-	// 创建 qq data 结构体
-	qqData := new(QQData)
 	qqData.QQExist = getQQExist(doc)
 	if qqData.QQExist {
 		qqData.QQPackageID = pkgId
