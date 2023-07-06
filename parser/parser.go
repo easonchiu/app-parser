@@ -2,7 +2,7 @@
  * @Author: easonchiu
  * @Date: 2023-07-03 11:07:23
  * @LastEditors: easonchiu
- * @LastEditTime: 2023-07-05 10:44:07
+ * @LastEditTime: 2023-07-06 15:23:45
  * @Description:
  */
 package parser
@@ -24,7 +24,8 @@ type IOSIAP struct {
 	Price string `bson:"price"`
 }
 
-type APPData struct {
+// IOS市场
+type IOSData struct {
 	IOSID               string    `bson:"ios_id"`                 // ios id
 	IOSFullName         string    `bson:"ios_full_name"`          // 应用名称(会包含 - 后面的内容)
 	IOSName             string    `bson:"ios_name"`               // 应用名称
@@ -42,7 +43,10 @@ type APPData struct {
 	IOSLastVersion      string    `bson:"ios_last_version"`       // ios 最新版本
 	IOSLastUpdate       string    `bson:"ios_last_update"`        // ios 最新版本时间
 	IOSIAPList          []*IOSIAP `bson:"ios_ipa_list"`           // ios 内购列表
-	// 华为市场
+}
+
+// 华为市场
+type HWData struct {
 	HWID               string `bson:"hw_id"`                 // hw id
 	HWPackageID        string `bson:"hw_package_id"`         // hw package id
 	HWSupplier         string `bson:"hw_supplier"`           // hw 供应商名称
@@ -54,20 +58,75 @@ type APPData struct {
 	HWPrivacyPolicyUrl string `bson:"hw_privacy_policy_url"` // hw 隐私政策地址
 	HWTargetSDK        string `bson:"hw_target_sdk"`         // hw 不知道是啥，感觉像第三方sdk的数量
 	HWOtherApps        []*App `bson:"hw_other_apps"`         // hw 全部同主体的app
-	// 小米市场
+}
+
+// 小米市场
+type MIData struct {
 	MIExist       bool   `bson:"mi_exist"`        // mi 是否有
 	MIPackageID   string `bson:"mi_package_id"`   // mi package id
 	MIRateCount   string `bson:"mi_rate_count"`   // mi 评价数
 	MILastVersion string `bson:"mi_last_version"` // mi 最新版本
 	MILastUpdate  string `bson:"mi_last_update"`  // mi 最新版本时间
-	// 应用宝
+}
+
+// 应用宝市场
+type QQData struct {
 	QQExist       bool   `bson:"qq_exist"`        // QQ 是否有
 	QQPackageID   string `bson:"qq_package_id"`   // qq package id
 	QQLastVersion string `bson:"qq_last_version"` // QQ 最新版本
 	QQLastUpdate  string `bson:"qq_last_update"`  // QQ 最新版本时间
 }
 
+type APPData struct {
+	IOSData
+	// 华为市场
+	HWData
+	// 小米市场
+	MIData
+	// 应用宝
+	QQData
+}
+
 func ParseAPPData(iosId string) (*APPData, error) {
+	var (
+		iosData *IOSData
+		hwData  *HWData
+		miData  *MIData
+		qqData  *QQData
+	)
+
+	// IOS数据
+	iosData, err := ParseIOSData(iosId)
+	if err != nil {
+		return nil, err
+	}
+
+	// 华为数据
+	hwId := getHWAppId(iosData.IOSName)
+	if hwId != "" {
+		hwData, _ = ParseHWData(hwId)
+	}
+
+	// 小米数据
+	if hwId != "" {
+		miData, _ = ParseMIData(hwId)
+	}
+
+	// 应用宝数据
+	if hwId != "" {
+		qqData, _ = ParseQQData(hwId)
+	}
+
+	return &APPData{
+		*iosData,
+		*hwData,
+		*miData,
+		*qqData,
+	}, nil
+}
+
+// 获取ios数据
+func ParseIOSData(iosId string) (*IOSData, error) {
 	if strings.TrimSpace(iosId) == "" {
 		return nil, errors.New("iosId 不能为空")
 	}
@@ -82,77 +141,114 @@ func ParseAPPData(iosId string) (*APPData, error) {
 		return nil, err
 	}
 
-	// 创建 app data 结构体
-	appData := new(APPData)
-	appData.IOSID = iosId
+	// 创建 ios data 结构体
+	iosData := new(IOSData)
+	iosData.IOSID = iosId
 
 	// ios数据
-	appData.IOSFullName = getAppStoreName(appStoreDoc)
-	nameSp := strings.Split(appData.IOSFullName, "-")
+	iosData.IOSFullName = getAppStoreName(appStoreDoc)
+	nameSp := strings.Split(iosData.IOSFullName, "-")
 	if len(nameSp) > 1 {
-		appData.IOSName = strings.TrimSpace(nameSp[0])
+		iosData.IOSName = strings.TrimSpace(nameSp[0])
 	} else {
-		appData.IOSName = appData.IOSFullName
+		iosData.IOSName = iosData.IOSFullName
 	}
-	appData.IOSIcon = getAppStoreIcon(appStoreDoc)
-	appData.IOSBundleID = getAppStoreBundleID(iosId)
-	appData.IOSSupplier = getAppStoreSupplier(appStoreDoc)
-	appData.IOSCategory = getAppStoreCategory(appStoreDoc)
-	appData.IOSDesc = getAppStoreDesc(appStoreDoc)
-	appData.IOSLanguage = getAppStoreLanguage(appStoreDoc)
-	appData.IOSRate = getAppStoreRate(appStoreDoc)
-	appData.IOSRateCount = getAppStoreRateCount(appStoreDoc)
-	appData.IOSPackageSize = getAppStorePackageSize(appStoreDoc)
-	appData.IOSPrivacyPolicyUrl = getAppStorePrivacyPolicyUrl(appStoreDoc)
-	appData.IOSOtherApps = getAppStoreDeveloperOtherApps(appStoreOtherAppsDoc)
-	appData.IOSIAPList = getAppStoreIAPList(appStoreDoc)
+	iosData.IOSIcon = getAppStoreIcon(appStoreDoc)
+	iosData.IOSBundleID = getAppStoreBundleID(iosId)
+	iosData.IOSSupplier = getAppStoreSupplier(appStoreDoc)
+	iosData.IOSCategory = getAppStoreCategory(appStoreDoc)
+	iosData.IOSDesc = getAppStoreDesc(appStoreDoc)
+	iosData.IOSLanguage = getAppStoreLanguage(appStoreDoc)
+	iosData.IOSRate = getAppStoreRate(appStoreDoc)
+	iosData.IOSRateCount = getAppStoreRateCount(appStoreDoc)
+	iosData.IOSPackageSize = getAppStorePackageSize(appStoreDoc)
+	iosData.IOSPrivacyPolicyUrl = getAppStorePrivacyPolicyUrl(appStoreDoc)
+	iosData.IOSOtherApps = getAppStoreDeveloperOtherApps(appStoreOtherAppsDoc)
+	iosData.IOSIAPList = getAppStoreIAPList(appStoreDoc)
 	lastVersion, lastUpdate := getAppStoreLastUpdate(appStoreDoc)
-	appData.IOSLastVersion = lastVersion
-	appData.IOSLastUpdate = lastUpdate
+	iosData.IOSLastVersion = lastVersion
+	iosData.IOSLastUpdate = lastUpdate
 
-	// 华为数据
-	appData.HWID = getHWAppId(appData.IOSName)
+	return iosData, nil
+}
 
-	if appData.HWID != "" {
-		json := getHWAppData(appData.HWID)
-		appData.HWPackageID = getHWPackageID(json)
-		appData.HWSupplier = getHWSupplier(json)
-		appData.HWRate = getHWRate(json)
-		appData.HWRateCount = getHWRateCount(json)
-		appData.HWLastVersion = getHWLastVersion(json)
-		appData.HWLastUpdate = getHWLastUpdate(json)
-		appData.HWPackageSize = getHWPackageSize(json)
-		appData.HWTargetSDK = getHWTargetSDK(json)
-		appData.HWPrivacyPolicyUrl = getHWPrivacyPolicyUrl(json)
-		appData.HWOtherApps = getHWOtherApps(json, appData.HWID)
+// 根据应用名获取华为id
+func GetHWIdByName(name string) string {
+	return getHWAppId(name)
+}
+
+// 获取华为市场数据
+func ParseHWData(hwId string) (*HWData, error) {
+	if strings.TrimSpace(hwId) == "" {
+		return nil, errors.New("hwId 不能为空")
 	}
 
-	// 小米数据
-	if appData.HWPackageID != "" {
-		doc, err := getMIDoc(appData.HWPackageID)
-		if err == nil {
-			appData.MIExist = getMIExist(doc)
-			if appData.MIExist {
-				appData.MIPackageID = appData.HWPackageID
-				appData.MIRateCount = getMIRateCount(doc)
-				appData.MILastVersion = getMILastVersion(doc)
-				appData.MILastUpdate = getMILastUpdate(doc)
-			}
-		}
+	json, err := getHWAppData(hwId)
+	if err != nil {
+		return nil, err
 	}
 
-	// 应用宝数据
-	if appData.HWPackageID != "" {
-		doc, err := getQQDoc(appData.HWPackageID)
-		if err == nil {
-			appData.QQExist = getQQExist(doc)
-			if appData.QQExist {
-				appData.QQPackageID = appData.HWPackageID
-				appData.QQLastVersion = getQQLastVersion(doc)
-				appData.QQLastUpdate = getQQLastUpdate(doc)
-			}
-		}
+	// 创建 hw data 结构体
+	hwData := new(HWData)
+
+	hwData.HWID = hwId
+	hwData.HWPackageID = getHWPackageID(json)
+	hwData.HWSupplier = getHWSupplier(json)
+	hwData.HWRate = getHWRate(json)
+	hwData.HWRateCount = getHWRateCount(json)
+	hwData.HWLastVersion = getHWLastVersion(json)
+	hwData.HWLastUpdate = getHWLastUpdate(json)
+	hwData.HWPackageSize = getHWPackageSize(json)
+	hwData.HWTargetSDK = getHWTargetSDK(json)
+	hwData.HWPrivacyPolicyUrl = getHWPrivacyPolicyUrl(json)
+	hwData.HWOtherApps = getHWOtherApps(json, hwData.HWID)
+
+	return hwData, nil
+}
+
+// 获取小米市场数据
+func ParseMIData(pkgId string) (*MIData, error) {
+	if strings.TrimSpace(pkgId) == "" {
+		return nil, errors.New("pkgId 不能为空")
 	}
 
-	return appData, nil
+	doc, err := getMIDoc(pkgId)
+	if err != nil {
+		return nil, err
+	}
+
+	// 创建 mi data 结构体
+	miData := new(MIData)
+	miData.MIExist = getMIExist(doc)
+	if miData.MIExist {
+		miData.MIPackageID = pkgId
+		miData.MIRateCount = getMIRateCount(doc)
+		miData.MILastVersion = getMILastVersion(doc)
+		miData.MILastUpdate = getMILastUpdate(doc)
+	}
+
+	return miData, nil
+}
+
+// 获取应用宝数据
+func ParseQQData(pkgId string) (*QQData, error) {
+	if strings.TrimSpace(pkgId) == "" {
+		return nil, errors.New("pkgId 不能为空")
+	}
+
+	doc, err := getQQDoc(pkgId)
+	if err != nil {
+		return nil, err
+	}
+
+	// 创建 qq data 结构体
+	qqData := new(QQData)
+	qqData.QQExist = getQQExist(doc)
+	if qqData.QQExist {
+		qqData.QQPackageID = pkgId
+		qqData.QQLastVersion = getQQLastVersion(doc)
+		qqData.QQLastUpdate = getQQLastUpdate(doc)
+	}
+
+	return qqData, nil
 }

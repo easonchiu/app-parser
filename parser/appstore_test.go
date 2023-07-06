@@ -2,7 +2,7 @@
  * @Author: easonchiu
  * @Date: 2023-07-03 15:01:22
  * @LastEditors: easonchiu
- * @LastEditTime: 2023-07-05 10:32:03
+ * @LastEditTime: 2023-07-06 15:28:20
  * @Description:
  */
 package parser
@@ -14,7 +14,7 @@ import (
 	"testing"
 )
 
-var IOS_APP_ID = "1570403558"
+var IOS_APP_ID = "1563890743"
 
 func TestGetAppStoreName(t *testing.T) {
 	doc, err := getAppStoreDoc(IOS_APP_ID)
@@ -127,7 +127,9 @@ func TestGetAppStoreRate(t *testing.T) {
 		t.Error("rate 为空")
 	}
 
-	reg := regexp.MustCompile("^[0-5.]+$")
+	fmt.Println(rate)
+
+	reg := regexp.MustCompile("^[0-9.]+$")
 	if !reg.MatchString(rate) {
 		t.Error("rate 取错了")
 	}
