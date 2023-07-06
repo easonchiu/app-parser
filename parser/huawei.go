@@ -2,7 +2,7 @@
  * @Author: easonchiu
  * @Date: 2023-07-03 17:09:07
  * @LastEditors: easonchiu
- * @LastEditTime: 2023-07-05 10:26:47
+ * @LastEditTime: 2023-07-06 15:11:33
  * @Description:
  */
 package parser
@@ -91,7 +91,7 @@ func getHWAppId(name string) string {
 	return data.Get("appid").String()
 }
 
-func getHWAppData(appid string) *gjson.Result {
+func getHWAppData(appid string) (*gjson.Result, error) {
 	id := getHWInterfaceCode()
 	u := "https://web-drcn.hispace.dbankcloud.cn/uowap/index"
 
@@ -106,7 +106,7 @@ func getHWAppData(appid string) *gjson.Result {
 	client := &http.Client{}
 	request, err := http.NewRequest("GET", u+"?"+params.Encode(), nil)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	now := time.Now()
@@ -115,21 +115,21 @@ func getHWAppData(appid string) *gjson.Result {
 
 	resp, err := client.Do(request)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	defer resp.Body.Close()
 
 	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	json := gjson.ParseBytes(bytes)
-	return &json
+	return &json, nil
 }
 
-func getHWOtherAppsData(appid string) *gjson.Result {
+func getHWOtherAppsData(appid string) (*gjson.Result, error) {
 	id := getHWInterfaceCode()
 	u := "https://web-drcn.hispace.dbankcloud.cn/uowap/index"
 
@@ -144,7 +144,7 @@ func getHWOtherAppsData(appid string) *gjson.Result {
 	client := &http.Client{}
 	request, err := http.NewRequest("GET", u+"?"+params.Encode(), nil)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	now := time.Now()
@@ -153,18 +153,18 @@ func getHWOtherAppsData(appid string) *gjson.Result {
 
 	resp, err := client.Do(request)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	defer resp.Body.Close()
 
 	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	json := gjson.ParseBytes(bytes)
-	return &json
+	return &json, nil
 }
 
 // 获取 package id
@@ -243,22 +243,24 @@ func getHWOtherApps(json *gjson.Result, appid string) []*App {
 			return true
 		})
 	} else {
-		json = getHWOtherAppsData(appid)
-		list = json.Get("layoutData.0.dataList")
+		json, err := getHWOtherAppsData(appid)
+		if err == nil {
+			list = json.Get("layoutData.0.dataList")
 
-		if !list.IsArray() {
-			return nil
-		}
+			if !list.IsArray() {
+				return nil
+			}
 
-		list.ForEach(func(_, value gjson.Result) bool {
-			apps = append(apps, &App{
-				ID:       value.Get("appid").String(),
-				Name:     value.Get("name").String(),
-				Category: value.Get("kindName").String() + "-" + value.Get("tagName").String(),
-				Icon:     value.Get("icon").String(),
+			list.ForEach(func(_, value gjson.Result) bool {
+				apps = append(apps, &App{
+					ID:       value.Get("appid").String(),
+					Name:     value.Get("name").String(),
+					Category: value.Get("kindName").String() + "-" + value.Get("tagName").String(),
+					Icon:     value.Get("icon").String(),
+				})
+				return true
 			})
-			return true
-		})
+		}
 	}
 
 	return apps
