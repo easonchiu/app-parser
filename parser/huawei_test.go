@@ -2,7 +2,7 @@
  * @Author: easonchiu
  * @Date: 2023-07-03 17:36:20
  * @LastEditors: easonchiu
- * @LastEditTime: 2023-07-05 10:26:59
+ * @LastEditTime: 2023-07-06 15:28:58
  * @Description:
  */
 package parser
@@ -24,7 +24,7 @@ func TestGetHWInterfaceCode(t *testing.T) {
 }
 
 func TestGetHWId(t *testing.T) {
-	id := getHWAppId("淘宝")
+	id := getHWAppId("抖音")
 	if id == "" {
 		t.Error("id 为空")
 	}
@@ -33,14 +33,24 @@ func TestGetHWId(t *testing.T) {
 }
 
 func TestGetHWAppData(t *testing.T) {
-	json := getHWAppData(HW_APP_ID)
+	json, err := getHWAppData(HW_APP_ID)
+
+	if err != nil {
+		t.Error(err)
+	}
+
 	if json.String() == "" {
 		t.Error("appData 为空")
 	}
 }
 
 func TestGetHWPackageID(t *testing.T) {
-	json := getHWAppData(HW_APP_ID)
+	json, err := getHWAppData(HW_APP_ID)
+
+	if err != nil {
+		t.Error(err)
+	}
+
 	pkg := getHWPackageID(json)
 
 	if pkg == "" {
@@ -49,7 +59,12 @@ func TestGetHWPackageID(t *testing.T) {
 }
 
 func TestGetHWSupplier(t *testing.T) {
-	json := getHWAppData(HW_APP_ID)
+	json, err := getHWAppData(HW_APP_ID)
+
+	if err != nil {
+		t.Error(err)
+	}
+
 	supplier := getHWSupplier(json)
 
 	if supplier == "" {
@@ -58,7 +73,12 @@ func TestGetHWSupplier(t *testing.T) {
 }
 
 func TestGetHWRate(t *testing.T) {
-	json := getHWAppData(HW_APP_ID)
+	json, err := getHWAppData(HW_APP_ID)
+
+	if err != nil {
+		t.Error(err)
+	}
+
 	rate := getHWRate(json)
 
 	if rate == "" {
@@ -71,7 +91,12 @@ func TestGetHWRate(t *testing.T) {
 }
 
 func TestGetHWRateCount(t *testing.T) {
-	json := getHWAppData(HW_APP_ID)
+	json, err := getHWAppData(HW_APP_ID)
+
+	if err != nil {
+		t.Error(err)
+	}
+
 	rateCount := getHWRateCount(json)
 
 	if rateCount == "" {
@@ -85,7 +110,12 @@ func TestGetHWRateCount(t *testing.T) {
 }
 
 func TestGetHWLastVersion(t *testing.T) {
-	json := getHWAppData(HW_APP_ID)
+	json, err := getHWAppData(HW_APP_ID)
+
+	if err != nil {
+		t.Error(err)
+	}
+
 	version := getHWLastVersion(json)
 
 	if version == "" {
@@ -99,7 +129,12 @@ func TestGetHWLastVersion(t *testing.T) {
 }
 
 func TestGetHWLastUpdate(t *testing.T) {
-	json := getHWAppData(HW_APP_ID)
+	json, err := getHWAppData(HW_APP_ID)
+
+	if err != nil {
+		t.Error(err)
+	}
+
 	update := getHWLastUpdate(json)
 
 	if update == "" {
@@ -113,7 +148,12 @@ func TestGetHWLastUpdate(t *testing.T) {
 }
 
 func TestGetHWPackageSize(t *testing.T) {
-	json := getHWAppData(HW_APP_ID)
+	json, err := getHWAppData(HW_APP_ID)
+
+	if err != nil {
+		t.Error(err)
+	}
+
 	size := getHWPackageSize(json)
 
 	if size == "" {
@@ -127,7 +167,12 @@ func TestGetHWPackageSize(t *testing.T) {
 }
 
 func TestGetHWTargetSDK(t *testing.T) {
-	json := getHWAppData(HW_APP_ID)
+	json, err := getHWAppData(HW_APP_ID)
+
+	if err != nil {
+		t.Error(err)
+	}
+
 	sdk := getHWTargetSDK(json)
 
 	if sdk == "" {
@@ -141,7 +186,12 @@ func TestGetHWTargetSDK(t *testing.T) {
 }
 
 func TestGetHWPrivacyPolicyUrl(t *testing.T) {
-	json := getHWAppData(HW_APP_ID)
+	json, err := getHWAppData(HW_APP_ID)
+
+	if err != nil {
+		t.Error(err)
+	}
+
 	url := getHWPrivacyPolicyUrl(json)
 
 	if url == "" {
@@ -155,7 +205,12 @@ func TestGetHWPrivacyPolicyUrl(t *testing.T) {
 }
 
 func TestGetHWOtherApps(t *testing.T) {
-	json := getHWAppData(HW_APP_ID)
+	json, err := getHWAppData(HW_APP_ID)
+
+	if err != nil {
+		t.Error(err)
+	}
+
 	apps := getHWOtherApps(json, HW_APP_ID)
 
 	for _, a := range apps {
