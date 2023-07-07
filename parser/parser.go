@@ -2,7 +2,7 @@
  * @Author: easonchiu
  * @Date: 2023-07-03 11:07:23
  * @LastEditors: easonchiu
- * @LastEditTime: 2023-07-06 17:09:14
+ * @LastEditTime: 2023-07-07 16:33:56
  * @Description:
  */
 package parser
@@ -89,10 +89,10 @@ type APPData struct {
 
 func ParseAPPData(iosId string) (*APPData, error) {
 	var (
-		iosData *IOSData
-		hwData  *HWData
-		miData  *MIData
-		qqData  *QQData
+		iosData *IOSData = new(IOSData)
+		hwData  *HWData  = new(HWData)
+		miData  *MIData  = new(MIData)
+		qqData  *QQData  = new(QQData)
 	)
 
 	// IOS数据
