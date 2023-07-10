@@ -2,12 +2,13 @@
  * @Author: easonchiu
  * @Date: 2023-07-03 17:09:07
  * @LastEditors: easonchiu
- * @LastEditTime: 2023-07-06 15:11:33
+ * @LastEditTime: 2023-07-07 17:31:53
  * @Description:
  */
 package parser
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -19,6 +20,57 @@ import (
 )
 
 const UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+
+// 华为市场
+type HWData struct {
+	HWID               string `bson:"hw_id"`                 // hw id
+	HWPackageID        string `bson:"hw_package_id"`         // hw package id
+	HWName             string `bson:"hw_name"`               // hw 名称
+	HWSupplier         string `bson:"hw_supplier"`           // hw 供应商名称
+	HWRate             string `bson:"hw_rate"`               // hw 评分
+	HWRateCount        string `bson:"hw_rate_count"`         // hw 评价数
+	HWLastVersion      string `bson:"hw_last_version"`       // hw 最新版本
+	HWLastUpdate       string `bson:"hw_last_update"`        // hw 最新版本时间
+	HWPackageSize      string `bson:"hw_package_size"`       // hw 包大小
+	HWPrivacyPolicyUrl string `bson:"hw_privacy_policy_url"` // hw 隐私政策地址
+	HWTargetSDK        string `bson:"hw_target_sdk"`         // hw 不知道是啥，感觉像第三方sdk的数量
+	HWOtherApps        []*App `bson:"hw_other_apps"`         // hw 全部同主体的app
+}
+
+// 根据应用名获取华为id
+func GetHWIdByName(name string) string {
+	return getHWAppId(name)
+}
+
+// 获取华为市场数据
+func ParseHWData(hwId string) (*HWData, error) {
+	// 创建 hw data 结构体
+	hwData := new(HWData)
+
+	if strings.TrimSpace(hwId) == "" {
+		return hwData, errors.New("hwId 不能为空")
+	}
+
+	json, err := getHWAppData(hwId)
+	if err != nil {
+		return hwData, err
+	}
+
+	hwData.HWID = hwId
+	hwData.HWPackageID = getHWPackageID(json)
+	hwData.HWName = getHWName(json)
+	hwData.HWSupplier = getHWSupplier(json)
+	hwData.HWRate = getHWRate(json)
+	hwData.HWRateCount = getHWRateCount(json)
+	hwData.HWLastVersion = getHWLastVersion(json)
+	hwData.HWLastUpdate = getHWLastUpdate(json)
+	hwData.HWPackageSize = getHWPackageSize(json)
+	hwData.HWTargetSDK = getHWTargetSDK(json)
+	hwData.HWPrivacyPolicyUrl = getHWPrivacyPolicyUrl(json)
+	hwData.HWOtherApps = getHWOtherApps(json, hwData.HWID)
+
+	return hwData, nil
+}
 
 // 获取华为市场的interface id
 func getHWInterfaceCode() string {
@@ -165,6 +217,12 @@ func getHWOtherAppsData(appid string) (*gjson.Result, error) {
 
 	json := gjson.ParseBytes(bytes)
 	return &json, nil
+}
+
+// 获取名称
+func getHWName(json *gjson.Result) string {
+	name := json.Get("layoutData.0.dataList.0.name")
+	return strings.TrimSpace(name.String())
 }
 
 // 获取 package id

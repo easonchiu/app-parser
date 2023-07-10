@@ -2,12 +2,13 @@
  * @Author: easonchiu
  * @Date: 2023-07-03 14:35:38
  * @LastEditors: easonchiu
- * @LastEditTime: 2023-07-05 11:58:49
+ * @LastEditTime: 2023-07-07 18:09:24
  * @Description:
  */
 package parser
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,6 +18,74 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/tidwall/gjson"
 )
+
+type IOSIAP struct {
+	Name  string `bson:"name"`
+	Price string `bson:"price"`
+}
+
+// IOS市场
+type IOSData struct {
+	IOSID               string    `bson:"ios_id"`                 // ios id
+	IOSFullName         string    `bson:"ios_full_name"`          // 应用名称(会包含 - 后面的内容)
+	IOSName             string    `bson:"ios_name"`               // 应用名称
+	IOSIcon             string    `bson:"ios_icon"`               // ios 图标地址
+	IOSBundleID         string    `bson:"ios_bundle_id"`          // ios bundle id
+	IOSDesc             string    `bson:"ios_desc"`               // ios 描述
+	IOSPrivacyPolicyUrl string    `bson:"ios_privacy_policy_url"` // ios 隐私政策地址
+	IOSOtherApps        []*App    `bson:"ios_other_apps"`         // ios 全部同主体的app
+	IOSCategory         string    `bson:"ios_category"`           // ios 分类
+	IOSPackageSize      string    `bson:"ios_package_size"`       // ios 包大小
+	IOSLanguage         string    `bson:"ios_language"`           // ios 支持语言
+	IOSSupplier         string    `bson:"ios_supplier"`           // ios 供应商名称
+	IOSRate             string    `bson:"ios_rate"`               // ios 评分
+	IOSRateCount        string    `bson:"ios_rate_count"`         // ios 评价数
+	IOSLastVersion      string    `bson:"ios_last_version"`       // ios 最新版本
+	IOSLastUpdate       string    `bson:"ios_last_update"`        // ios 最新版本时间
+	IOSIAPList          []*IOSIAP `bson:"ios_ipa_list"`           // ios 内购列表
+}
+
+// 获取ios数据
+func ParseIOSData(iosId string) (*IOSData, error) {
+	if strings.TrimSpace(iosId) == "" {
+		return nil, errors.New("iosId 不能为空")
+	}
+
+	appStoreDoc, err := getAppStoreDoc(iosId)
+	if err != nil {
+		return nil, err
+	}
+
+	appStoreOtherAppsDoc, err := getAppStoreOtherAppsDoc(iosId)
+	if err != nil {
+		return nil, err
+	}
+
+	// 创建 ios data 结构体
+	iosData := new(IOSData)
+	iosData.IOSID = iosId
+
+	// ios数据
+	iosData.IOSFullName = getAppStoreName(appStoreDoc)
+	iosData.IOSName = getAppStoreCleanName(iosData.IOSFullName)
+	iosData.IOSIcon = getAppStoreIcon(appStoreDoc)
+	iosData.IOSBundleID = getAppStoreBundleID(iosId)
+	iosData.IOSSupplier = getAppStoreSupplier(appStoreDoc)
+	iosData.IOSCategory = getAppStoreCategory(appStoreDoc)
+	iosData.IOSDesc = getAppStoreDesc(appStoreDoc)
+	iosData.IOSLanguage = getAppStoreLanguage(appStoreDoc)
+	iosData.IOSRate = getAppStoreRate(appStoreDoc)
+	iosData.IOSRateCount = getAppStoreRateCount(appStoreDoc)
+	iosData.IOSPackageSize = getAppStorePackageSize(appStoreDoc)
+	iosData.IOSPrivacyPolicyUrl = getAppStorePrivacyPolicyUrl(appStoreDoc)
+	iosData.IOSOtherApps = getAppStoreDeveloperOtherApps(appStoreOtherAppsDoc)
+	iosData.IOSIAPList = getAppStoreIAPList(appStoreDoc)
+	lastVersion, lastUpdate := getAppStoreLastUpdate(appStoreDoc)
+	iosData.IOSLastVersion = lastVersion
+	iosData.IOSLastUpdate = lastUpdate
+
+	return iosData, nil
+}
 
 // app store 的 doc 内容
 func getAppStoreDoc(id string) (*goquery.Document, error) {
@@ -93,25 +162,22 @@ func getAppStoreName(doc *goquery.Document) string {
 	content := doc.Find("meta[property='og:title']")
 
 	name := strings.TrimSpace(content.AttrOr("content", ""))
+	re := regexp.MustCompile(`\p{C}+`) // 匹配所有空字符
+	name = re.ReplaceAllString(name, "")
 
-	// 将字符串转换为rune数组
-	srcRunes := []rune(name)
+	return name
+}
 
-	// 创建一个新的rune数组，用来存放过滤后的数据
-	dstRunes := make([]rune, 0, len(srcRunes))
+// 过滤应用名称
+func getAppStoreCleanName(fullName string) string {
+	name := fullName
 
-	// 过滤不可见字符，根据上面的表的0-32和127都是不可见的字符
-	for _, c := range srcRunes {
-		if c >= 0 && c <= 31 {
-			continue
-		}
-		if c == 127 {
-			continue
-		}
-		dstRunes = append(dstRunes, c)
+	nameSp := strings.Split(fullName, "-")
+	if len(nameSp) > 1 {
+		name = strings.TrimSpace(nameSp[0])
 	}
 
-	return string(dstRunes)
+	return name
 }
 
 // 获取应用图标
