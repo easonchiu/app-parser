@@ -2,7 +2,7 @@
  * @Author: easonchiu
  * @Date: 2023-07-03 17:36:20
  * @LastEditors: easonchiu
- * @LastEditTime: 2023-07-06 15:28:58
+ * @LastEditTime: 2023-07-07 17:26:19
  * @Description:
  */
 package parser
@@ -14,7 +14,7 @@ import (
 	"testing"
 )
 
-var HW_APP_ID = "C34075"
+var HW_APP_ID = "C10168892"
 
 func TestGetHWInterfaceCode(t *testing.T) {
 	code := getHWInterfaceCode()
@@ -41,6 +41,20 @@ func TestGetHWAppData(t *testing.T) {
 
 	if json.String() == "" {
 		t.Error("appData 为空")
+	}
+}
+
+func TestGetHWName(t *testing.T) {
+	json, err := getHWAppData(HW_APP_ID)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	name := getHWName(json)
+
+	if name == "" {
+		t.Error("name 为空")
 	}
 }
 

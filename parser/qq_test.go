@@ -34,6 +34,20 @@ func TestGetQQExist(t *testing.T) {
 	}
 }
 
+func TestGetQQName(t *testing.T) {
+	doc, err := getQQDoc(QQ_APP_ID)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	name := getQQName(doc)
+
+	if name == "" {
+		t.Error("name 取错了")
+	}
+}
+
 func TestGetQQLastVersion(t *testing.T) {
 	doc, err := getQQDoc(QQ_APP_ID)
 

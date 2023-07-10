@@ -2,7 +2,7 @@
  * @Author: easonchiu
  * @Date: 2023-07-03 17:36:20
  * @LastEditors: easonchiu
- * @LastEditTime: 2023-07-04 14:15:37
+ * @LastEditTime: 2023-07-07 17:37:46
  * @Description:
  */
 package parser
@@ -50,6 +50,20 @@ func TestGetMiExist(t *testing.T) {
 	exist = getMIExist(doc)
 	if exist == true {
 		t.Error("exist 取错了")
+	}
+}
+
+func TestGetMiName(t *testing.T) {
+	doc, err := getMIDoc(MI_APP_ID)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	name := getMIName(doc)
+
+	if name == "" {
+		t.Error("name 取错了")
 	}
 }
 
